@@ -1,0 +1,163 @@
+{% extends 'main.html' %}
+{% load jformat %}
+{% load i18n %}
+{% load arithmatic %}
+{% block title %}
+    {% trans "Expense" %}
+{% endblock title %}
+
+{% block content %}
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #DDD;
+        }
+
+        tr:hover {
+            background-color: grey;
+        }
+    </style>
+    <div class="container">
+        <div class="content">
+            <h2>{{ date }}</h2>
+            {% if flat_fees %}
+                <div class="table-responsive">
+                    <table class="expense-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">{% trans "Floors" %}</th>
+                            {% for ce in common_expenses %}
+                                <th scope="col">{{ ce.name }}</th>
+                            {% endfor %}
+                            {% for ie in individual_expenses %}
+                                <th scope="col">{{ ie.name }}</th>
+                            {% endfor %}
+                            <th scope="col">{% trans "Total" %}</th>
+                            <th scope="col">{% trans "شارژ داده؟" %}</th>
+
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for flat in flat_fees %}
+                            <tr>
+                                <th scope="row">{{ flat.flat.name }}</th>
+                                {% for ce in common_expenses %}
+                                    <td>{{ ce.price |divide:total_flats |formating_float }}</td>
+                                {% endfor %}
+                                {% for ie in individual_expenses %}
+                                    <td>{{ ie.price|divide:apartment_population|mult:flat.flat.population |formating_float }}</td>
+                                {% endfor %}
+                                <td>{{ flat.total_fees |formating_float }}</td>
+                                <td>
+                                    <form id="payment-form-{{ flat.id }}" method="post"
+                                          action="{% url 'change-is-paid' flat.id %}">
+                                        {% csrf_token %}
+                                        {% if flat.is_paid %}
+                                            <input type="radio" name="is_paid" value="yes" checked="checked"
+                                                   onclick="submitForm({{ flat.id }})"/>
+                                            بله
+                                        {% else %}
+                                            <input type="radio" name="is_paid" value="no"
+                                                   onclick="submitForm({{ flat.id }})"/>
+                                            خیر
+                                        {% endif %}
+                                    </form>
+                                </td>
+
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <br>
+                    <br>
+                    <h3>جمع همه هزینه ها: {{ all_expenses |formating_float }}</h3>
+                    <h3>جمع دریافتی : {{ all_received |formating_float }}</h3>
+
+                    <h3> تراز این ماه :{{ all_received|subtract:all_expenses |formating_float }}</h3>
+
+                    <a class="button" type="button" href="{% url 'change_price' date.year date.month date.day %}"> تغییر
+                        هزینه ها</a>
+
+                </div>
+            {% else %}
+                <form action="{% url 'create-monthly' date.year date.month date.day %}">
+                    <button type="submit" class="button">شروع این ماه</button>
+                </form>
+            {% endif %}
+            <br>
+            <form action="{% url 'expense' date.year date.month date.day %}" id="next-month">
+                <button type="submit" class="button" name="next-month"
+                        onclick="submitNextMonthForm({{ date.yea }},{{ date.month }} ,{{ date.day }})">ماه بعد
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        function submitForm(flatId) {
+            // Get the form element
+            const form = document.getElementById(`payment-form-${flatId}`);
+
+            // Create a FormData object from the form
+            const formData = new FormData(form);
+
+            // Send the form data using fetch
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') // Include CSRF token
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json(); // Assuming the server returns a JSON response
+                })
+                .then(data => {
+                    location.reload()
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+
+        function submitNextMonthForm(year, month, day) {
+            // Calculate next month and year
+            let nextMonth = month + 1;
+            let nextYear = year;
+
+            if (nextMonth > 12) {
+                nextMonth = 1;
+                nextYear += 1;
+            }
+
+            // Construct the new URL with the updated year and month
+            const newActionUrl = `/your-url-path/${nextYear}/${nextMonth}/${day}`; // Replace '/your-url-path/' with your actual URL path
+
+            // Get the form element
+            const form = document.getElementById('next-month');
+
+            // Update the form action URL
+            form.action = newActionUrl;
+            console.log(form.action)
+            // Create a FormData object from the form
+            const formData = new FormData(form);
+
+            // Send the form data using fetch
+
+            // Prevent default form submission
+            return false;
+        }
+    </script>
+{% endblock content %}

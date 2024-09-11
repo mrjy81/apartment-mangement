@@ -1,0 +1,15 @@
+{% extends 'main.html' %}
+{% load jformat %}
+{% block title %}
+    home
+{% endblock title %}
+
+
+{% block content %}
+    <div class="container">
+        <div class="content">
+            {{ me_form.as_p }}
+            {{ form.as_p }}
+        </div>
+    </div>
+{% endblock content %}

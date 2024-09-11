@@ -1,0 +1,22 @@
+{% extends 'main.html' %}
+{% load jformat %}
+{% block title %}
+    home
+{% endblock title %}
+
+
+{% block content %}
+    <div class="container">
+        <div class="content">
+            <form action="{% url 'index' %}" method="post">
+                {% csrf_token %}
+                <input type="text" data-jdp name="date" autocomplete="off" placeholder="تاریخ"
+                       value="{{ year }}/{{ month }}/{{ day }}" class="date">
+                <button type="submit" class="button">جست و جو</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        jalaliDatepicker.startWatch();
+    </script>
+{% endblock content %}
